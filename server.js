@@ -3,15 +3,18 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+
+// ⭐ CRITICAL: Railway requires this exact setup
 const PORT = process.env.PORT || 8080;
+const HOST = '0.0.0.0';
 
 // Enable CORS
 app.use(cors());
 app.use(express.json());
 
-// Email credentials from .env
-const EMAIL_ADDRESS = process.env.GMAIL_USER || 'yeshwanth9750@gmail.com';
-const APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'fiul nimu bkrm avlf';
+// Email credentials from environment variables
+const EMAIL_ADDRESS = process.env.GMAIL_USER;
+const APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
 // Lazy load nodemailer
 let transporter = null;
@@ -19,12 +22,10 @@ let transporter = null;
 function getTransporter() {
     if (!transporter) {
         const nodemailer = require('nodemailer');
-
-        // Use SMTP_SSL on port 465 (same as Python script)
         transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 465,
-            secure: true, // Use SSL
+            secure: true,
             auth: {
                 user: EMAIL_ADDRESS,
                 pass: APP_PASSWORD
@@ -54,7 +55,7 @@ app.post('/send-email', async (req, res) => {
         });
 
         console.log(`✅ Email sent to ${to}`);
-        res.json({ success: true });
+        res.json({ success: true, message: 'Email sent successfully' });
     } catch (error) {
         console.error('❌ Email error:', error.message);
         res.status(500).json({ error: error.message });
@@ -64,14 +65,25 @@ app.post('/send-email', async (req, res) => {
 // Health check endpoint
 app.get('/', (req, res) => {
     res.json({
-        status: 'running',
-        message: 'Email server is active',
-        email: EMAIL_ADDRESS
+        status: 'ok',
+        message: 'Email server is running',
+        email: EMAIL_ADDRESS,
+        port: PORT
     });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`📧 Email server running on http://0.0.0.0:${PORT}`);
-    console.log(`Using Gmail: ${EMAIL_ADDRESS}`);
-    console.log(`Password configured: ${APP_PASSWORD ? 'Yes ✅' : 'No ❌'}`);
+// ⭐ CRITICAL: Start server with explicit host binding
+const server = app.listen(PORT, HOST, () => {
+    console.log(`✅ Server is running on ${HOST}:${PORT}`);
+    console.log(`📧 Email: ${EMAIL_ADDRESS}`);
+    console.log(`🔑 Password: ${APP_PASSWORD ? 'Configured' : 'Missing'}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, closing server...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 });
