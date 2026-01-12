@@ -70,8 +70,8 @@ app.get('/', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`📧 Email server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`📧 Email server running on http://0.0.0.0:${PORT}`);
     console.log(`Using Gmail: ${EMAIL_ADDRESS}`);
     console.log(`Password configured: ${APP_PASSWORD ? 'Yes ✅' : 'No ❌'}`);
 });
